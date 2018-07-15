@@ -38,6 +38,7 @@ using namespace std;
 
 int main(int argc, char* argv[])
 {
+
 	//Size of tree should be stored in local variable size.
 	//Height of tree should be stored in local variable height.
 	//Input name will be stored in a string name
@@ -82,8 +83,15 @@ int main(int argc, char* argv[])
 
 	// Parse file for actor names and populate tree
 	// hint: you can use getline
-	
+	while (true) {
+      getline(in, line);
+      if (!in.good()) break;
+      tree.insert(line);
+    }
+
 	// store the height and size of the tree and print
+	size = tree.size();
+    height = tree.height();
 
 	cout << "Size of tree: " << size << "\n";
 	cout << "Height of tree: " << height << "\n";
@@ -94,11 +102,12 @@ int main(int argc, char* argv[])
 
 		// Read user input for name of the actor
 		// hint: you can use getline or directly use cin >>
+		getline(cin, name);
 		
         // Find the actor in the tree
+        BSTIterator<string> actor = tree.find(name);
 		// set found to true of actor was found
-		bool found; 
-		
+		bool found = actor != tree.end();
 
 		if (found) {
 			cout << name << " found!" << "\n";
@@ -107,9 +116,15 @@ int main(int argc, char* argv[])
 			// hint: you can use getline or directly use cin >>
 			int numberOfActors;
 			cout << "Number of subsequent actors to list:" << "\n";
-			
+			cin >> numberOfActors;
 			// Print out subsequent actors
-			
+			for (int i = 0; i < numberOfActors; i++) {
+                if (++actor == tree.end()) {
+                    cout << "There are no subsequent actors to display" << "\n";
+                    break;
+                }
+                cout << *actor << endl;
+            }
 		}
 		else {
 			cout << name << " NOT found" << "\n";
@@ -120,8 +135,8 @@ int main(int argc, char* argv[])
 
 		// Read user input for y or n and store inside the variable response
 		// hint: you can use getline or directly use cin >>
-		
-		}
+		cin >> response;
+		cin.ignore();
 	}
 
 	if(in.is_open())

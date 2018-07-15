@@ -32,21 +32,18 @@ public:
 
   /** Post-increment operator. */
   BSTIterator<Data> operator++(int) {
-    BSTIterator before = BSTIterator(curr);
-    ++(*this);
-    return before;
+    BSTNode<Data>* prev = curr;
+    curr = curr->successor();
+    return BSTIterator(prev);
   }
 
   /** Equality test operator. */
   bool operator==(BSTIterator<Data> const & other) const {
-
     return curr == other.curr;
-
   }
 
   /** Inequality test operator. */
   bool operator!=(BSTIterator<Data> const & other) const {
-    
     return curr != other.curr;
 
   }

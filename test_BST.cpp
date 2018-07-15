@@ -52,11 +52,13 @@ int main() {
   /* Test height */
 
   cout << "Height is: " << b.height() << endl;
-  if(b.height() != 3) {
+  if(b.height() != 2) {
     cout << "... which is incorrect." << endl;
     return -1;
   }
 
+
+  b.inorder();
 
   /* Test find return value. */
 

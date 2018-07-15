@@ -67,7 +67,7 @@ int main() {
 
   /* Test height */
   cout << "Height is: " << kdtree.height() << endl;
-  if(kdtree.height() != 3) {
+  if(kdtree.height() != 2) {
     kdtree.inorder();
     cout << "... which is incorrect." << endl;
     return -1;

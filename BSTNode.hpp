@@ -13,6 +13,9 @@ public:
    *  no parent, and no children.
    */
   BSTNode(const Data & d) : data(d) {
+    left = 0;
+    right = 0;
+    parent = 0;
   }
 
   BSTNode<Data>* left;
@@ -27,7 +30,20 @@ public:
    ** or 0 if there is none.
    */
   BSTNode<Data>* successor() {
-    return 0;
+    BSTNode<Data>* cur = this;
+    if (right) {
+      cur = cur->right;
+      while (cur->left) cur = cur->left;
+      return cur;
+    }
+
+    while (cur->parent) {
+      if (cur == cur->parent->left) break;
+      cur = cur->parent;
+    }
+    cur = cur->parent;
+
+    return cur;
   }
 
 }; 

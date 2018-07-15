@@ -6,6 +6,7 @@
 #include <math.h>    // pow, abs
 #include <vector>    // vector<typename>
 #include <limits>    // numeric_limits<type>::max()
+#include <cstdlib>   // rand()
 #include "BST.hpp"
 
 using namespace std;
@@ -43,7 +44,9 @@ class Point {
     /** Calculate and return the distance between two points p1 and p2
      */ // TODO
     static double squareDistance(const Point& p1, const Point& p2) {
-      return pow((p1.x - p2.x), 2.0) + pow((p1.y - p2.y), 2.0 );
+      double xDelta = p1.x - p2.x;
+      double yDelta = p1.y - p2.y;
+      return xDelta * xDelta + yDelta * yDelta;
     }
 };
 
@@ -61,6 +64,16 @@ bool yLessThan(const Point & p1, const Point & p2) {
   return p1.y < p2.y;
 }
 
+double squareDiff(const Point & p1, const Point & p2, int dimension) {
+  double diff;
+  if (dimension) {
+    diff = p1.y - p2.y;
+  } else {
+    diff = p1.x - p2.x;
+  }
+  return diff * diff;
+}
+
 class KDT : public BST<Point> {
   public:
 
@@ -76,7 +89,12 @@ class KDT : public BST<Point> {
      *        root, isize, and iheight member variables.
      */ // TODO
     virtual unsigned int build(vector<Point>& items) {
-      return 0;
+      isize = items.size();
+      if (isize == 0) return 0;
+      vector<Point> points(items);
+
+      root = buildSubset(points, 0, isize - 1, 0, 0);
+      return isize;
     }
 
 
@@ -89,7 +107,10 @@ class KDT : public BST<Point> {
      *        to search through it.
      */ // TODO
     virtual iterator findNearestNeighbor(const Point& item) const {
-      return 0;
+      double smallestDistance = numeric_limits<double>::max();
+      BSTNode<Point>* closestPoint = 0;
+      findNNHelper(root, item, &smallestDistance, &closestPoint, 0);
+      return BSTIterator<Point>(closestPoint);
     }
     
     /** For the kd-tree, the find method should not be used.  Use the function
@@ -111,7 +132,7 @@ class KDT : public BST<Point> {
       return false;
 
     }
-  private:
+  //private:
 
     /** Recursively add a subset of the array to the KD tree
      *  Parameters items: the list of points that are used to build the kd tree
@@ -124,10 +145,90 @@ class KDT : public BST<Point> {
      *                  calls should be made for the left and right subtree 
      *                  (again, if there are any remaining points).
      */ // TODO
-    BSTNode<Point>* buildSubset(vector<Point> items, unsigned int start, 
+    BSTNode<Point>* buildSubset(vector<Point>& items, unsigned int start, 
                                  unsigned int end, unsigned int dimension, 
                                  unsigned int height) {
-      return 0;
+      //if (start > end) return 0;
+
+      if (start == end) {
+         iheight = max(iheight, height);
+         return new BSTNode<Point>(items[start]);
+      }
+
+      unsigned int mid = (end - start) / 2 + start;
+      orderStats(items, start, end, mid, dimension);
+
+      BSTNode<Point>* pt = new BSTNode<Point>(items[mid]);
+
+      if (mid > start) {
+        pt->left = buildSubset(items, start, mid - 1, 1 - dimension, height + 1);
+      }
+
+      if (mid < end) {
+        pt->right = buildSubset(items, mid + 1, end, 1 - dimension, height + 1);
+      }
+      return pt;
+    }
+
+    void orderStats(vector<Point>& items, int start, int end,
+                                    int target, unsigned int dimension) {
+      // Okay the other one I was weary of; this blindsided me
+      if (start == end) return;
+
+      int pivotIndex = start + rand() % (end - start + 1);
+      pair<int, int> pivotSpan = pivot(items, start, end, pivotIndex, dimension);
+
+      if (pivotSpan.first > target) {
+        orderStats(items, start, pivotSpan.first - 1, target, dimension);
+        return;
+      }
+
+      if (pivotSpan.second >= target) { 
+        return;
+      }
+      
+      orderStats(items, pivotSpan.second + 1, end, target, dimension);
+    }
+
+    pair<int, int> pivot(vector<Point>& items, int start, int end, 
+                              int pIndex, unsigned int dimension) {
+      // If somehow this case comes up?
+      if (start == end) return pair<int, int>(start, end);
+
+      Point pValue = items[pIndex];
+      //swap(&items[start], &items[pIndex]);
+      bool (*lt) (const Point&, const Point&)= dimension ? &yLessThan : &xLessThan;
+
+      // Partition the array -- i is always the last spot where a less-than-pivot value sits
+      int i, j;
+      for (i = start - 1, j = start; j <= end; j++) {
+        if (lt(items[j], pValue)) {
+          swap(&items[++i], &items[j]);
+        }
+      }
+
+      // Start of the repeats of the pivot
+      start = i + 1;
+
+      // Get all repeats of the pivot in one spot
+      for (j = i + 1; j <= end; j++) {
+        if (!lt(pValue, items[j])) {
+          swap(&items[++i], &items[j]);
+        }
+      };
+
+      // End of the repeats of the pivot value
+      end = i;
+
+      return pair<int, int>(start, end);
+    }
+
+    void swap(Point* a, Point* b) {
+      // Short circuit to avoid transferring objects unecessarily.
+      if (a == b) return;
+      Point c = *b;
+      *b = *a;
+      *a = c;
     }
 
     /** Find the node in the subtree with that is closes to the given point p
@@ -146,6 +247,31 @@ class KDT : public BST<Point> {
                                  double * smallestSquareDistance, 
                                  BSTNode<Point> ** closestPoint,
                                  unsigned int dimension) const {
+      if (!node) return;
+
+      bool (*lt) (const Point&, const Point&)= dimension ? &yLessThan : &xLessThan;
+
+      BSTNode<Point>* defVisit;
+      BSTNode<Point>* maybeVisit;
+      if (lt(node->data, queryPoint)) { 
+        defVisit = node->right;
+        maybeVisit = node->left;
+      } else {
+        defVisit = node->left;
+        maybeVisit = node->right;
+      }
+
+      findNNHelper(defVisit, queryPoint, smallestSquareDistance,
+                   closestPoint, 1 - dimension);
+      
+      if (squareDiff(node->data, queryPoint, dimension) > *smallestSquareDistance) return;
+
+      if (Point::squareDistance(node->data, queryPoint) < * smallestSquareDistance) {
+        *closestPoint = node;
+        *smallestSquareDistance = Point::squareDistance(node->data, queryPoint);
+      }
+      findNNHelper(maybeVisit, queryPoint, smallestSquareDistance,
+                   closestPoint, 1 - dimension);
     }
 };
 

@@ -74,7 +74,35 @@ int main(int argc, char* argv[])
 	in.seekg(0, ios_base::beg); 
 
 	// My implementation begin
-  
+	double x, y;
+
+    vector<Point> points;
+
+    while (true) {
+        in >> x;
+        in >> y;
+        if (!in.good()) break;
+        points.push_back(Point(x, y));
+    }
+
+    KDT kdt;
+    kdt.build(points);
+    size = kdt.size();
+    height = kdt.height();
+    cout << "Size of tree: " << size << "\n";
+    cout << "Height of tree: " << height << "\n";
+
+    char input = 'y';
+    while (input == 'y') {
+        cout << "Enter coordinate (x, y): " << "\n";
+        cin >> x; 
+        cin >> y; 
+        Point nearestNeighbor = *kdt.findNearestNeighbor(Point(x, y));
+        cout << "Nearest point in tree: " << nearestNeighbor << "\n";
+        cout << "Search again? (y/n)" << "\n";
+        cin >> input;
+    }
+
   	// My implementation end
 
 	if(in.is_open())
